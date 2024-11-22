@@ -1,20 +1,18 @@
 #include <stdio.h>
 #include <string.h>
 
-static int delete_all_students(void)
-{
+static int delete_all_students() {
     FILE *pF = fopen("student.txt", "w");
     if (pF == NULL) {
         fprintf(stderr, "Error opening the file\n");
         return 1;
-    } else {
-        fclose(pF);
     }
+    fclose(pF);
+    printf("All students deleted successfully!\n");
     return 0;
 }
 
-static int delete_student(void)
-{
+static int delete_student() {
     FILE *pf = fopen("student.txt", "r+");
     if (pf == NULL) {
         fprintf(stderr, "Error opening the file\n");
@@ -22,11 +20,15 @@ static int delete_student(void)
     }
     char name[50];
     printf("Enter name to delete:\n");
-    fgets(name, sizeof(name), stdin);
-    name[strlen(name) - 1] = '\0';
+    if (fgets(name, sizeof(name), stdin) == NULL) {
+        fprintf(stderr, "Error reading input\n");
+        fclose(pf);
+        return 1;
+    }
+    name[strcspn(name, "\n")] = '\0'; // Remove trailing newline
+
     char line[100];
-    long pos = ftell(pf);
-    char rest[1000];
+    long pos = 0;
     int found = 0;
 
     while (fgets(line, sizeof(line), pf) != NULL) {
@@ -38,22 +40,18 @@ static int delete_student(void)
     }
 
     if (found) {
-        // Read the rest of the file
-        fgets(rest, sizeof(rest), pf);
-        // Go back to where we found the name
         fseek(pf, pos, SEEK_SET);
-        // Write the rest of the file over it
-        fputs(rest, pf);
+        fprintf(pf, "\n");
         printf("Student deleted successfully!\n");
     } else {
         printf("Student not found!\n");
     }
+
     fclose(pf);
     return 0;
 }
 
-static int add_grade(void)
-{
+static int add_grade() {
     FILE *pf = fopen("student.txt", "r+");
     if (pf == NULL) {
         fprintf(stderr, "Error opening the file\n");
@@ -61,17 +59,25 @@ static int add_grade(void)
     }
     char name[50];
     printf("Enter student name:\n");
-    fgets(name, sizeof(name), stdin);
-    name[strlen(name) - 1] = '\0';
+    if (fgets(name, sizeof(name), stdin) == NULL) {
+        fprintf(stderr, "Error reading input\n");
+        fclose(pf);
+        return 1;
+    }
+    name[strcspn(name, "\n")] = '\0';
+
     char line[100];
     while (fgets(line, sizeof(line), pf) != NULL) {
         if (strstr(line, name) != NULL) {
-            fseek(pf, ftell(pf) - strlen(line), SEEK_SET);
             int age;
             sscanf(line, "%[^,], %d", name, &age);
             printf("Enter grade (0-100):\n");
             int grade;
-            scanf("%d", &grade);
+            if (scanf("%d", &grade) != 1) {
+                fprintf(stderr, "Invalid input for grade\n");
+                fclose(pf);
+                return 1;
+            }
             fprintf(pf, "%s, %d, Grade: %d\n", name, age, grade);
             break;
         }
@@ -80,149 +86,112 @@ static int add_grade(void)
     return 0;
 }
 
-static int add_student(void)
-{
+static int add_student() {
     FILE *pF = fopen("student.txt", "a");
     if (pF == NULL) {
         fprintf(stderr, "Error opening the file\n");
         return 1;
     }
-    printf("Add a Student:\n");
     char name[50];
-    int age;
+    int age, grade;
+
     printf("Enter name:\n");
-    fgets(name, sizeof(name), stdin);
-    name[strlen(name) - 1] = '\0';
+    if (fgets(name, sizeof(name), stdin) == NULL) {
+        fprintf(stderr, "Error reading input\n");
+        fclose(pF);
+        return 1;
+    }
+    name[strcspn(name, "\n")] = '\0';
+
     printf("Enter age:\n");
-    scanf("%d", &age);
-    printf("Enter grade (0-10):\n");
-    int grade;
-    scanf("%d", &grade);
+    if (scanf("%d", &age) != 1) {
+        fprintf(stderr, "Invalid input for age\n");
+        fclose(pF);
+        return 1;
+    }
+
+    printf("Enter grade (0-100):\n");
+    if (scanf("%d", &grade) != 1) {
+        fprintf(stderr, "Invalid input for grade\n");
+        fclose(pF);
+        return 1;
+    }
     fprintf(pF, "%s, %d, Grade: %d\n", name, age, grade);
     fclose(pF);
     return 0;
 }
 
-static int show_all_students(void)
-{
+static int show_all_students() {
     FILE *pF = fopen("student.txt", "r");
     if (pF == NULL) {
         fprintf(stderr, "Error opening the file\n");
         return 1;
-    } else {
-        char line[100];
-        while (fgets(line, sizeof(line), pF) != NULL) {
-            printf("%s", line);
-        }
-        fclose(pF);
     }
+    char line[100];
+    while (fgets(line, sizeof(line), pF) != NULL) {
+        printf("%s", line);
+    }
+    fclose(pF);
     return 0;
 }
 
-static int search_student(void)
-{
+static int search_student() {
     FILE *pF = fopen("student.txt", "r");
     if (pF == NULL) {
-        fprintf(stderr, "Error opening the file\n");
-        return 1;
-    } else {
-        char name[50];
-        printf("Enter name to search:\n");
-        fgets(name, sizeof(name), stdin);
-        name[strlen(name) - 1] = '\0';
-        char line[10];
-        while (fgets(line, sizeof(line), pF) != NULL) {
-            if (strstr(line, name) != NULL) {
-                printf("%s", line);
-                break;
-            }
-        }
-        fclose(pF);
-    }
-    return 0;
-}
-
-static int edit_student(void)
-{
-    FILE *pf = fopen("student.txt", "r+");
-    if (pf == NULL) {
         fprintf(stderr, "Error opening the file\n");
         return 1;
     }
     char name[50];
-    printf("Enter name to edit:\n");
-    fgets(name, sizeof(name), stdin);
-    name[strlen(name) - 1] = '\0';
-    char line[10];
-    while (fgets(line, sizeof(line), pf) != NULL) {
+    printf("Enter name to search:\n");
+    if (fgets(name, sizeof(name), stdin) == NULL) {
+        fprintf(stderr, "Error reading input\n");
+        fclose(pF);
+        return 1;
+    }
+    name[strcspn(name, "\n")] = '\0';
+
+    char line[100];
+    while (fgets(line, sizeof(line), pF) != NULL) {
         if (strstr(line, name) != NULL) {
-            fseek(pf, ftell(pf) - strlen(line), SEEK_SET);
-            printf("Enter new name:\n");
-            fgets(name, sizeof(name), stdin);
-            name[strlen(name) - 1] = '\0';
-            printf("Enter new age:\n");
-            int age;
-            scanf("%d", &age);
-            printf("Enter new grade (0-10):\n");
-            int grade;
-            scanf("%d", &grade);
-            fprintf(pf, "%s, %d, Grade: %d\n", name, age, grade);
-            break;
+            printf("%s", line);
+            fclose(pF);
+            return 0;
         }
     }
-    fclose(pf);
+    printf("Student not found!\n");
+    fclose(pF);
     return 0;
 }
 
-int main(void)
-{
-    int choice = 0;
+int main(void) {
+    int choice;
 
-    printf("\n"
-           "Student Management System  Copyright (C) 2024\n"
-           "===========================================\n"
-           "This program is free software: you can redistribute it and/or modify\n"
-           "it under the terms of the GNU General Public License as published by\n"
-           "the Free Software Foundation, either version 3 of the License, or\n"
-           "(at your option) any later version.\n"
-           "\n"
-           "This program is distributed in the hope that it will be useful,\n"
-           "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-           "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\n"
-           "GNU General Public License for more details.\n"
-           "\n"
-           "You should have received a copy of the GNU General Public License\n"
-           "along with this program. If not, see <https://www.gnu.org/licenses/>.\n"
-           "===========================================\n\n");
-
-    printf("Q to quit\n"
-           "============================================\n"
-           "Welcome to the Student Management System\n"
-           "=========================================\n"
-           "[1] Add\n[2] Show all\n[3] Search\n[4] Edit\n[5] Delete\n"
-           "[6] Delete All Students\n[7] Add Grade\n[8] Exit\n"
-           "=========================================\n");
-
-    if (choice == 8) {
-        printf("Goodbye\n");
-        return 0;
-    }
-
-    scanf("%d", &choice);
-    while (choice != 8) {
-        switch (choice) {
-        case 1: add_student(); break;
-        case 2: show_all_students(); break;
-        case 3: search_student(); break;
-        case 4: edit_student(); break;
-        case 5: delete_student(); break;
-        case 6: delete_all_students(); break;
-        case 7: add_grade(); break;
-        default: printf("Invalid choice\n");
+    while (1) {
+        printf("\nMenu:\n"
+               "1. Add Student\n"
+               "2. Show All Students\n"
+               "3. Search Student\n"
+               "4. Delete Student\n"
+	       "5. Delete All Students\n"
+	       "6. Exit\n");
+        	
+	printf("Enter your choice: ");
+        if (scanf("%d", &choice) != 1) {
+            fprintf(stderr, "Invalid input. Exiting.\n");
+            break;
         }
-        printf("Enter choice (1-8): ");
-        scanf("%d", &choice);
-    }
 
-    printf("Goodbye\n");
+        getchar(); // Flush leftover newline
+
+        switch (choice) {
+            case 1: add_student(); break;
+            case 2: show_all_students(); break;
+            case 3: search_student(); break;
+            case 4: delete_student(); break;
+            case 5: delete_all_students(); break;
+	    case 6: return 0;
+            default: printf("Invalid choice\n");
+        }
+    }
     return 0;
+}
